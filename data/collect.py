@@ -3,6 +3,8 @@ import numpy as np
 import os
 import shutil
 import matplotlib.pyplot as plt
+import json
+from utils import *
 
 images_folder = "/mnt/DGXUserData/dxm060/Zach_Analysis/petlymph_image_data/final_2.5d_images_and_labels/output_coronal_images_v2"
 labels_folder = "/mnt/DGXUserData/dxm060/Zach_Analysis/petlymph_image_data/final_2.5d_images_and_labels/output_coronal_labels_v2"
@@ -11,6 +13,7 @@ val_folder = "/mnt/DGXUserData/dxm060/Zach_Analysis/uw_lymphoma_pet_3d/dataframe
 test_folder = "/mnt/DGXUserData/dxm060/Zach_Analysis/uw_lymphoma_pet_3d/dataframes/testing.xlsx"
 heap = "./heap"
 
+# Sample DataFrame (Replace this with your actual DataFrame)
 df = pd.DataFrame({
     'label_name': ['997bb945-628d-4724-b370-b84de974a19f', 'another-id'],
     'image': ['part-000001/997bb945-628d-4724-b370-b84de974a19f.jpg', 'part-000001/another-id.jpg'],
@@ -18,18 +21,15 @@ df = pd.DataFrame({
     'label_text': ['A scenic view of a ruined city at sunset.', 'A futuristic robot standing in a neon-lit alley.']
 })
 
-df = pd.read_excel(train_folder)
-df = df.sort_values(by="label_name")
-df.set_index("label_name", inplace=True)
-
-df['image'] = df['iamge'].str.replace('/mnt/bradshaw', '/mnt/PURENFS/bradshaw', regex=False)
+df['image'] = df['image'].str.replace('/mnt/Bradshaw', '/mnt/PURENFS/Bradshaw', regex=False)
+df['label'] = df['label'].str.replace('/mnt/Bradshaw', '/mnt/PURENFS/Bradshaw', regex=False)
 
 # Convert DataFrame to the desired format
 formatted_data = [
     {
         "id": str(index),
         "image": row['image'],
-        "mask": row['mask'],
+        "mask": row['label'],
         "conversations": [
             {
                 "from": "human",
@@ -37,7 +37,7 @@ formatted_data = [
             },
             {
                 "from": "gpt",
-                "value": row['label_text']
+                "value": row['report']
             }
         ]
     }
@@ -53,10 +53,3 @@ with open("formatted_data.json", "w") as f:
 
 # Print the output
 print(json_output)
-
-for i, ((k, v), image) in enumerate(zip(df.iterrows(), sorted(os.listdir(images_folder)))):
-
-    pet_scan_data_nifti = load_nifti_image(nifti)
-    mip_image_nifti = create_mip(pet_scan_data_nifti, ax=ax)
-    save_image_as_jpeg(mip_image_nifti, 'nifti.jpeg', rot=rot)
-    print("MIP saved as nifti.jpeg")
